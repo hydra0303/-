@@ -9,8 +9,9 @@ while IFS= read -r line; do
         DUE_MINUTE="${BASH_REMATCH[2]}"
         DUE_TIME="${DUE_HOUR}:${DUE_MINUTE}"
 
-        # Powershell로 현재시간과 due시간 초단위 변환
-        NOW_SEC=$(powershell.exe -Command "[int][double](New-TimeSpan -Start (Get-Date '00:00') -End (Get-Date (Get-Date -Format 'HH:mm'))).TotalSeconds")
+        # 현재 시간(초) 계산 (00:00부터 경과한 초)
+        NOW_SEC=$(powershell.exe -Command "[int][double](New-TimeSpan -Start (Get-Date '00:00') -End (Get-Date)).TotalSeconds")
+        # due 시간(초) 계산
         DUE_SEC=$(powershell.exe -Command "[int][double](New-TimeSpan -Start (Get-Date '00:00') -End (Get-Date '$DUE_TIME')).TotalSeconds")
 
         if [[ -z "$DUE_SEC" || -z "$NOW_SEC" ]]; then
@@ -23,11 +24,8 @@ while IFS= read -r line; do
 
         if (( DIFF_SEC > 0 && DIFF_SEC < 3600 )); then
             echo "⏰ '$line' → $DUE_TIME 에 알림 예정 ($DIFF_SEC초 후)"
-            # 알림 팝업 띄우기 (백그라운드 실행)
-            ( sleep "$DIFF_SEC" && powershell.exe -Command "Add-Type -AssemblyName PresentationFramework;[System.Windows.MessageBox]::Show('할 일 시간입니다: $line')" ) &
+            ( sleep "$DIFF_SEC" && powershell.exe -Command "Start-Process powershell -ArgumentList '-NoExit','-Command','[System.Windows.MessageBox]::Show(\"⏰ 할 일 알림``n$line\", \"할 일 알림\")'" ) &
         fi
     fi
 done < "$TODO_FILE"
-
-
 
